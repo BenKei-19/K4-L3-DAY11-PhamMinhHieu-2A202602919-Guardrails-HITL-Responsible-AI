@@ -1,5 +1,18 @@
 # Day 11 — Controlled Agent Security (2026)
 
+> **Học viên:** Phạm Minh Hiếu · **MSSV:** 2A202602919
+>
+> **Cách chạy nhanh** (từ gốc repo, sau khi điền `.env`):
+> ```powershell
+> .\.venv\Scripts\Activate.ps1
+> python src/main.py --part 2   # CP2 — guardrails (in terminal)
+> python src/main.py --part 3   # CP3 — outputs/results.json, audit_log.json, metrics.json
+> python src/main.py --part 4   # CP4 — outputs/attack_results.json (+ unsafe/guards)
+> python scripts/grade.py --submission-dir . --out outputs/grade_report.json
+> ```
+> Pipeline Blue: `RateLimitPlugin → InputGuardrailPlugin → LLM (liquid/lfm-2.5-2.6b) → OutputGuardrailPlugin`,
+> audit + monitoring ghi nhận mỗi request, `is_egress_allowed` chặn dữ liệu ra ngoài (xem `src/assignment/pipeline.py`).
+
 > 👤 **Hình thức:** bài tập **cá nhân** (1 người / 1 MSSV).  
 > 🎯 **Mục tiêu:** xây **Blue** (phòng thủ), rồi red-team **Red** + **Red Advance**.  
 > ✅ Làm theo **Checkpoint 1 → 5** trong [`CHECKPOINTS.md`](CHECKPOINTS.md) · nộp theo [`SUBMISSION.md`](SUBMISSION.md).

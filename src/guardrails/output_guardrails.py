@@ -12,6 +12,7 @@ from google.adk.agents import llm_agent
 from google.adk import runners
 from google.adk.plugins import base_plugin
 
+from core.config import DEMO_SECRETS
 from core.utils import chat_with_agent
 
 
@@ -41,13 +42,20 @@ def content_filter(response: str) -> dict:
 
     # PII patterns to check
     PII_PATTERNS = {
-        # TODO: Add regex patterns for:
-        # - VN phone number: r"0\d{9,10}"
-        # - Email: r"[\w.-]+@[\w.-]+\.[a-zA-Z]{2,}"
-        # - National ID (CMND/CCCD): r"\b\d{9}\b|\b\d{12}\b"
-        # - API key pattern: r"sk-[a-zA-Z0-9-]+"
-        # - Password pattern: r"password\s*[:=]\s*\S+"
+        # VN mobile/landline: 10–11 digits starting with 0 (or +84). Public
+        # hotlines like "1900 545 467" do not start with 0 and are kept.
+        "phone": r"(?<!\d)(?:\+84|0)\d{9,10}(?!\d)",
+        "email": r"[\w.+-]+@[\w-]+(?:\.[\w-]+)*\.[a-zA-Z]{2,}",
+        # CMND (9 digits) / CCCD (12 digits)
+        "national_id": r"\b\d{9}\b|\b\d{12}\b",
+        "api_key": r"\bsk-[a-zA-Z0-9-]{6,}",
+        "password": r"(?:password|passwd|mật\s*khẩu)\s*(?:is|là|[:=])\s*\S+",
+        "internal_host": r"\b[\w-]+(?:\.[\w-]+)*\.internal(?::\d+)?\b",
     }
+    # Exact canary values from data/protected/vinbank_secrets.json — catches a
+    # secret even when the model states it without "password is ..." phrasing.
+    for i, secret in enumerate(DEMO_SECRETS):
+        PII_PATTERNS[f"known_secret_{i}"] = re.escape(secret)
 
     for name, pattern in PII_PATTERNS.items():
         matches = re.findall(pattern, response, re.IGNORECASE)
@@ -172,16 +180,27 @@ class OutputGuardrailPlugin(base_plugin.BasePlugin):
         if not response_text:
             return llm_response
 
-        # TODO: Implement logic:
-        # 1. Call content_filter(response_text)
-        #    - If issues found: replace llm_response.content with redacted version
-        #    - Increment self.redacted_count
-        # 2. If use_llm_judge: call llm_safety_check(response_text)
-        #    - If unsafe: replace llm_response.content with a safe message
-        #    - Increment self.blocked_count
-        # 3. Return llm_response (possibly modified)
+        filtered = content_filter(response_text)
+        if not filtered["safe"]:
+            self.redacted_count += 1
+            response_text = filtered["redacted"]
+            llm_response.content = types.Content(
+                role="model", parts=[types.Part.from_text(text=response_text)]
+            )
 
-        return llm_response  # TODO: modify if needed
+        if self.use_llm_judge:
+            judgement = await llm_safety_check(response_text)
+            if not judgement["safe"]:
+                self.blocked_count += 1
+                llm_response.content = types.Content(
+                    role="model",
+                    parts=[types.Part.from_text(
+                        text="I'm sorry, I can't share that. "
+                        "How else can I help with your VinBank banking needs?"
+                    )],
+                )
+
+        return llm_response
 
 
 # ============================================================

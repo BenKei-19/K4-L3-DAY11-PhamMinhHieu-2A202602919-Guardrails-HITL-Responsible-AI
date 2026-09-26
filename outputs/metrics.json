@@ -1,0 +1,23 @@
+{
+  "total_requests": 37,
+  "blocked_requests": 20,
+  "block_rate": 0.5405405405405406,
+  "rate_limit_hits": 5,
+  "judge_checks": 0,
+  "judge_fails": 0,
+  "judge_fail_rate": 0.0,
+  "alerts": [
+    {
+      "metric": "block_rate",
+      "value": 0.5405405405405406,
+      "threshold": 0.5,
+      "message": "Block rate 54% exceeds 50% — possible attack campaign or over-blocking guardrail."
+    },
+    {
+      "metric": "rate_limit_hits",
+      "value": 5,
+      "threshold": 5,
+      "message": "5 rate-limit hits — a client may be flooding the assistant."
+    }
+  ]
+}
